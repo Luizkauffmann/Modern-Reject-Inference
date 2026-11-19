@@ -1,0 +1,149 @@
+{
+ "type": "strategy_tree_v2",
+ "meta": {
+  "name": "CHAMPION_POLICY",
+  "version": 1,
+  "status": "champion",
+  "dataset": "ri_scored",
+  "score_col": "p_kgb",
+  "target": "bad_obs"
+ },
+ "tree": {
+  "id": "n1",
+  "name": "All applications",
+  "calcs": [],
+  "split": {
+   "kind": "rule",
+   "rules": [
+    "bk_flag == 1",
+    "bureau_score < 660",
+    "dti_pct > 45",
+    "delq_24m >= 2",
+    "inq_6m >= 6"
+   ],
+   "source": "manual"
+  },
+  "children": [
+   {
+    "id": "n2",
+    "name": "Bankruptcy",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "decline",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [
+      "R1"
+     ],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   },
+   {
+    "id": "n3",
+    "name": "Bureau score < 660",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "decline",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [
+      "R2"
+     ],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   },
+   {
+    "id": "n4",
+    "name": "DTI > 45",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "decline",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [
+      "R3"
+     ],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   },
+   {
+    "id": "n5",
+    "name": "Delinquencies 24m >= 2",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "decline",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [
+      "R4"
+     ],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   },
+   {
+    "id": "n6",
+    "name": "Inquiries 6m >= 6",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "decline",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [
+      "R5"
+     ],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   },
+   {
+    "id": "n7",
+    "name": "Passes policy",
+    "calcs": [],
+    "split": null,
+    "children": [],
+    "leaf": {
+     "mode": "approve",
+     "score_expr": "",
+     "approve_at": null,
+     "refer_at": null,
+     "reason_codes": [],
+     "pricing_tier": "",
+     "limit_expr": "",
+     "outputs": []
+    }
+   }
+  ],
+  "leaf": null
+ },
+ "display": {},
+ "settings": {
+  "margin": 350,
+  "loss": 4200
+ },
+ "saved_at": "2026-11-17T00:16:42Z",
+ "saved_by": "reject_inference_explorer"
+}

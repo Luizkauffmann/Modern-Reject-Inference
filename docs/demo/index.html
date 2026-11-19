@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23101a2c%27/%3E%3Ccircle cx=%2710%27 cy=%2720%27 r=%274%27 fill=%27%2334d399%27/%3E%3Ccircle cx=%2720%27 cy=%2712%27 r=%274%27 fill=%27%234f9dff%27/%3E%3Ccircle cx=%2722%27 cy=%2722%27 r=%273%27 fill=%27%23f2b544%27/%3E%3C/svg%3E">
+<title>Modern Reject Inference · Live demo</title>
+<meta name="description" content="Reject inference with credit bureau data: grade the classical methods, explore counterfactual twins on a similarity map, and search for swap-in rules. Runs in your browser.">
+<style>
+  :root { --ink: #1b2433; --muted: #5a6677; --line: #dde3ea; --acc: #1f5fd0; --bg: #f6f7f9; --card: #fff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { background: #101a2c; color: #e6ecf7; padding: 36px 16px 30px; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  header h1 { margin: 0 0 6px; font-size: 28px; }
+  header p { margin: 0; opacity: .88; max-width: 780px; }
+  .tag { display: inline-block; margin-top: 12px; font-size: 12px; background: rgba(255, 255, 255, .12); padding: 3px 10px; border-radius: 12px; }
+  main { padding: 26px 0 50px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; }
+  .card h2 { margin: 0 0 6px; font-size: 19px; }
+  .card p { margin: 0 0 14px; color: var(--muted); flex: 1; }
+  .btn { align-self: flex-start; background: var(--acc); color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; }
+  .shot { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); margin: 22px 0 0; }
+  h3 { margin: 28px 0 8px; font-size: 17px; }
+  ol, ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  code { background: #e9eef6; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .note { background: #fff8e6; border: 1px solid #f0dca8; border-radius: 10px; padding: 12px 16px; margin-top: 22px; font-size: 14px; }
+  footer { border-top: 1px solid var(--line); padding: 18px 0 30px; color: var(--muted); font-size: 13px; }
+  a { color: var(--acc); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Modern Reject Inference</h1>
+    <p>Find the good applicants a credit policy declined. Use credit bureau performance to grade the classical reject-inference methods, look up the counterfactual twins of any applicant on a similarity map, and search for swap-in rules that clear break-even.</p>
+    <span class="tag">Personal open-source project by Luiz Kauffmann · Apache 2.0 · not affiliated with any vendor</span>
+  </div>
+</header>
+<main class="wrap">
+  <div class="cards">
+    <div class="card">
+      <h2>Reject Inference Explorer</h2>
+      <p>The live app on 20,000 synthetic applications: similarity map, counterfactual twins, threshold sweep, bump hunting, lasso to rule, the approval and bad-rate frontier, and the three inference methods graded against bureau outcomes.</p>
+      <a class="btn" href="explorer.html">Open the Explorer</a>
+    </div>
+    <div class="card">
+      <h2>Slides: the method, step by step</h2>
+      <p>38 slides on the problem and the mathematics: the booked-only model, hard cutoff, parceling and fuzzy augmentation worked through, the off-us to on-us factor, t-SNE, twins, and how each rule search works. With speaker notes.</p>
+      <a class="btn" href="slides.html">Open the slides</a>
+    </div>
+  </div>
+
+  <img class="shot" src="img/bump.png" alt="Reject Inference Explorer: a bump-hunting rule with its members highlighted on the similarity map">
+
+  <h3>How it works</h3>
+  <ul>
+    <li><b>Runs entirely in your browser.</b> The app's Python engine runs in <a href="https://pyodide.org">Pyodide</a> (Python compiled to WebAssembly). There is no server, and nothing is sent anywhere.</li>
+    <li><b>First visit:</b> it downloads Python, numpy and pandas (about 15 MB, then cached) and the sample data (about 5 MB). Startup takes 10 to 30 seconds.</li>
+    <li><b>Lasso to rule</b> needs scikit-learn for its decision tree. It is downloaded the first time you use the lasso (about 20 MB).</li>
+    <li><b>Send to Strategy Tree</b> downloads the challenger as a JSON strategy tree, since there is no server to save it on.</li>
+    <li><b>The map is precomputed.</b> The t-SNE layout is built by the pipeline and shipped with the sample. Twins, rules and every statistic are computed live, on the original attributes.</li>
+  </ul>
+
+  <h3>Try it in two minutes</h3>
+  <ol>
+    <li>Open the <a href="explorer.html">Explorer</a>. The <b>Overview</b> tab shows the three populations and what each decline rule would cost if its whole group were approved.</li>
+    <li>Set <b>Colour not-booked by</b> to <i>Champion decline rule</i>. Look for a decline colour sitting inside the cloud of booked customers.</li>
+    <li>Click a booked point (a green circle). The <b>Twins</b> tab lists the ten most similar applicants who were not booked, and how they performed at another lender.</li>
+    <li>Open <b>Rules</b> and press <b>Threshold sweep</b>: no single policy cut can be relaxed profitably.</li>
+    <li>Press <b>Bump hunting</b>. Read the rule card, then the holdout line. Click other rows of the table to trade volume against bad rate.</li>
+    <li>Open <b>Frontier</b> to see the policy today, the policy plus the rule, and what each model could do alone.</li>
+  </ol>
+
+  <h3>Sample data</h3>
+  <p>All data is <b>synthetic</b>, produced by <a href="https://github.com/Luizkauffmann/Modern-Reject-Inference/blob/main/data/generate_data.py">data/generate_data.py</a>: 20,000 applications with bureau-style attributes, a five-rule policy, internal outcomes for booked accounts and bureau outcomes for not-booked applicants who opened a trade elsewhere. Two pockets of creditworthy applicants that the policy declines are planted on purpose, so that the search has something to find.</p>
+  <p>The scores and inferred outcomes come from <a href="https://github.com/Luizkauffmann/Modern-Reject-Inference/blob/main/reject_inference/pipeline.py">reject_inference/pipeline.py</a>. To run everything on your own data, see the <a href="https://github.com/Luizkauffmann/Modern-Reject-Inference#using-your-own-data">README</a>.</p>
+
+  <h3>Read this before trusting a number</h3>
+  <ul>
+    <li><b>Selection.</b> A bureau outcome exists only for applicants another lender approved. They are probably better than declined applicants who obtained nothing.</li>
+    <li><b>Overfitting.</b> On the sample, the most profitable bump-hunting rule shows 2.5% on-us equivalent in the search and 7.6% on the holdout. The holdout line is there to be read.</li>
+    <li><b>The map</b> shows who is similar to whom. Its axes have no meaning and nothing is computed from its coordinates.</li>
+  </ul>
+
+  <div class="note"><b>Demo only.</b> The data is synthetic and the models are not validated credit models. Nothing here is financial, credit-risk or regulatory advice. Any rule that changes who is approved needs model-risk and fair-lending review.</div>
+</main>
+<footer>
+  <div class="wrap">© 2026 Luiz Kauffmann · <a href="https://github.com/Luizkauffmann/Modern-Reject-Inference">Source on GitHub</a> (Apache 2.0) · Personal project, not affiliated with, endorsed by or supported by any company. All trademarks belong to their owners.</div>
+</footer>
+</body>
+</html>

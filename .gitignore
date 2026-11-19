@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+# generated: python data/generate_data.py && python -m reject_inference.pipeline
+data/*.csv
+# strategies saved from the app (the champion policy is kept)
+strategies/trees/*
+!strategies/trees/CHAMPION_POLICY.json

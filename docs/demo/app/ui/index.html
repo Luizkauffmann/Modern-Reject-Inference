@@ -1,0 +1,83 @@
+<div class="rx">
+  <header class="rx-top">
+    <div class="rx-title">Reject Inference Explorer</div>
+    <span class="rx-chip">bureau performance</span>
+    <span class="rx-chip">counterfactual twins</span>
+    <span class="rx-chip">rule discovery</span>
+    <div class="rx-grow"></div>
+    <span class="rx-chip rx-chip-hi" id="rx-status">loading…</span>
+    <button class="rx-btn rx-btn-sm" id="rx-reload" title="Re-read the data files">Reload data</button>
+  </header>
+
+  <div class="rx-body">
+    <aside class="rx-side">
+      <div class="rx-h">Colour not-booked by</div>
+      <select id="rx-color" class="rx-input">
+        <option value="obs">Observed bureau performance</option>
+        <option value="hc">Inferred: hard cutoff (HC)</option>
+        <option value="pcl">Inferred: parceling (PCL)</option>
+        <option value="fz">Inferred: fuzzy (FZ)</option>
+        <option value="kgb">KGB score (everyone)</option>
+        <option value="rule">Champion decline rule</option>
+      </select>
+
+      <div class="rx-h">Show</div>
+      <label class="rx-check"><input type="checkbox" data-vis="BK" checked> Booked</label>
+      <label class="rx-check"><input type="checkbox" data-vis="ANB" checked> Approved, not booked</label>
+      <label class="rx-check"><input type="checkbox" data-vis="DEC" checked> Declined</label>
+      <label class="rx-check"><input type="checkbox" data-vis="NOBUR" checked> No bureau trade</label>
+
+      <div class="rx-h">Map tool</div>
+      <div class="rx-seg">
+        <button class="rx-btn rx-on" data-tool="pick">Pick / pan</button>
+        <button class="rx-btn" data-tool="lasso">Lasso</button>
+      </div>
+      <div class="rx-hint" id="rx-toolhint">Click a point to find its counterfactual twins. Drag to pan, scroll to zoom.</div>
+
+      <div class="rx-h">Economics</div>
+      <div class="rx-row"><span>Margin per good</span><input id="rx-margin" class="rx-input rx-num" type="number" value="350"></div>
+      <div class="rx-row"><span>Loss per bad</span><input id="rx-loss" class="rx-input rx-num" type="number" value="4200"></div>
+      <div class="rx-row"><span>Break-even bad rate</span><b id="rx-be">–</b></div>
+
+      <div class="rx-h">Legend</div>
+      <div id="rx-legend" class="rx-legend"></div>
+    </aside>
+
+    <main class="rx-map">
+      <canvas id="rx-canvas"></canvas>
+      <div id="rx-tip" class="rx-tip"></div>
+      <div class="rx-maplabel">t-SNE of bureau attributes · sample of <span id="rx-npts">0</span> applicants · position shows similarity, not a rule</div>
+      <div id="rx-active" class="rx-active"></div>
+    </main>
+
+    <section class="rx-panel">
+      <nav class="rx-tabs">
+        <button class="rx-tab rx-on" data-tab="overview">Overview</button>
+        <button class="rx-tab" data-tab="twins">Twins</button>
+        <button class="rx-tab" data-tab="rules">Rules</button>
+        <button class="rx-tab" data-tab="frontier">Frontier</button>
+        <button class="rx-tab" data-tab="methods">Methods</button>
+      </nav>
+      <div class="rx-pane" id="rx-pane-overview"></div>
+      <div class="rx-pane" id="rx-pane-twins" hidden>
+        <div class="rx-empty">Click any point on the map. A booked applicant returns the closest not-booked applicants with bureau performance; a not-booked applicant returns the closest booked customers.</div>
+      </div>
+      <div class="rx-pane" id="rx-pane-rules" hidden>
+        <div class="rx-rulebar">
+          <button class="rx-btn" id="rx-sweep">Threshold sweep</button>
+          <button class="rx-btn" id="rx-bump">Bump hunting</button>
+          <button class="rx-btn" id="rx-lasso-go" disabled>Lasso → rule</button>
+        </div>
+        <div id="rx-rulecard"></div>
+        <div id="rx-rulelist"><div class="rx-empty">
+          <b>Threshold sweep</b> relaxes each champion cut step by step and shows how the applicants who come in performed at the bureau.<br><br>
+          <b>Bump hunting</b> searches the declined population for boxes of attributes with the highest share of good performers.<br><br>
+          <b>Lasso → rule</b> turns a region you draw on the map into an if/else on the real attributes.
+        </div></div>
+      </div>
+      <div class="rx-pane" id="rx-pane-frontier" hidden></div>
+      <div class="rx-pane" id="rx-pane-methods" hidden></div>
+    </section>
+  </div>
+  <div id="rx-toast" class="rx-toast" hidden></div>
+</div>

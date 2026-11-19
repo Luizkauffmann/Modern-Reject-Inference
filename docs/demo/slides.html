@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slides · Modern Reject Inference</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="demo.css">
+<style>
+html, body { height: auto; background: #0d1014; }
+.deck { max-width: 1320px; margin: 0 auto; padding: 22px 16px 60px; counter-reset: page; }
+.deck-head { color: #c5cedb; font: 14px/1.5 -apple-system, "Segoe UI", sans-serif; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 0 0 18px; }
+.deck-head a { color: #f2b544; }
+.deck-head label { cursor: pointer; }
+.frame { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; margin: 0 0 22px; background: #F7F6F2; }
+.frame > section { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; box-sizing: border-box; overflow: hidden; transform-origin: 0 0; isolation: isolate; font: 32px/1.2 'Inter', Arial, sans-serif; }
+.notes { display: none; color: #aeb8c7; font: 15px/1.6 -apple-system, "Segoe UI", sans-serif; max-width: 980px; margin: -8px 0 30px; }
+body.with-notes .notes { display: block; }
+:where(.frame) * { margin: 0; }
+:where(.frame) table { width: 100%; border-collapse: separate; border-spacing: 0; border: solid #0003; border-width: 2px 0 0 2px; }
+:where(.frame) th, :where(.frame) td { padding: .35em .6em; text-align: left; border: solid #0003; border-width: 0 2px 2px 0; }
+@page { size: 1920px 1080px; margin: 0; }
+@media print {
+  .mri-bar, .deck-head, .notes { display: none !important; }
+  .deck { max-width: none; padding: 0; }
+  .frame { width: 1920px; height: 1080px; aspect-ratio: auto; border-radius: 0; margin: 0; break-after: page; }
+  .frame > section { transform: none !important; }
+}
+/* ---- slide styles ---- */
+.frame > section { color: #44506A; }
+
+section { padding: 128px 128px 160px; background: #F7F6F2; counter-increment: page; }
+section.dark { background: #0F1B2D; }
+section.accent { background: #F2B544; }
+
+h1 { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 112px; font-weight: 600; line-height: 1.05; color: #F7F6F2; margin: 0 0 40px; }
+h2 { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 64px; font-weight: 600; line-height: 1.1; color: #0F1B2D; margin: 0 0 40px; }
+h3 { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 36px; font-weight: 600; line-height: 1.15; color: #0F1B2D; margin: 0 0 16px; }
+.dark h2 { color: #F7F6F2; }
+.accent h2 { font-size: 96px; line-height: 1.05; margin: 0 0 72px; }
+
+.eyebrow { font-size: 24px; font-weight: 600; letter-spacing: 3px; color: #1F5FD0; margin: 0 0 20px; }
+.dark .eyebrow { color: #F2B544; }
+.accent .eyebrow { color: #0F1B2D; }
+
+.lede { font-size: 32px; line-height: 1.4; color: #44506A; margin: 0 0 36px; }
+.dark .lede { color: #BFC9DA; }
+.note { font-size: 30px; line-height: 1.4; color: #44506A; margin: 32px 0 0; }
+.dark .note { color: #BFC9DA; }
+
+.cards { display: flex; gap: 32px; }
+.card { flex: 1; background: #FDFDFB; border: 2px solid #D9DCE3; border-radius: 16px; padding: 40px; }
+.ctext { font-size: 30px; line-height: 1.4; color: #44506A; margin: 0; }
+.tag { font-size: 24px; font-weight: 600; color: #1F5FD0; margin: 20px 0 0; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+.small { padding: 28px 32px; }
+.small h3 { font-size: 30px; margin: 0 0 12px; }
+.stext { font-size: 26px; line-height: 1.4; color: #44506A; margin: 0; }
+
+.big { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 112px; font-weight: 600; line-height: 1; color: #0F1B2D; margin: 0 0 16px; }
+.stat { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 60px; font-weight: 600; line-height: 1.1; color: #0F1B2D; margin: 0 0 6px; }
+.statlabel { font-size: 24px; line-height: 1.35; color: #44506A; margin: 0 0 22px; }
+
+.formula { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 32px; line-height: 1.5; background: #0F1B2D; color: #F7F6F2; padding: 22px 28px; border-radius: 12px; margin: 0 0 20px; }
+.f24 { font-size: 24px; padding: 20px 22px; }
+
+.split { display: flex; gap: 56px; align-items: flex-start; }
+.left { width: 648px; }
+.shot { width: 960px; height: 578px; object-fit: contain; border-radius: 12px; background: #0B1220; }
+.points { font-size: 30px; line-height: 1.4; color: #44506A; margin: 0; padding-left: 36px; }
+.points li { margin-bottom: 18px; }
+.left .points { font-size: 28px; }
+.dark .points { color: #F7F6F2; font-size: 38px; }
+.dark .points li { margin-bottom: 26px; }
+
+table { width: 100%; font-size: 32px; color: #44506A; }
+.hl { background: #FBEFCF; }
+
+.ex { background: #E4ECFB; border-radius: 12px; padding: 26px 30px; font-size: 28px; line-height: 1.45; color: #0F1B2D; margin: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.col { flex: 1; }
+.cardlist { font-size: 28px; line-height: 1.4; color: #44506A; margin: 0; padding-left: 32px; }
+.cardlist li { margin-bottom: 14px; }
+.diagram { position: relative; }
+.dlabel { position: absolute; font-size: 24px; line-height: 1.25; color: #44506A; margin: 0; }
+.bar { display: flex; height: 170px; border-radius: 12px; overflow: hidden; margin: 0 0 12px; }
+.zonea { flex: 61; background: #1F5FD0; padding: 26px 30px; }
+.zoneb { flex: 39; background: #F2B544; padding: 26px 30px; }
+.ztitle { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 32px; font-weight: 600; margin: 0 0 8px; }
+.ztext { font-size: 26px; line-height: 1.35; margin: 0; }
+.zonea .ztitle { color: #FDFDFB; }
+.zonea .ztext { color: #FDFDFB; }
+.zoneb .ztitle { color: #0F1B2D; }
+.zoneb .ztext { color: #0F1B2D; }
+.axis { font-size: 24px; color: #5E6880; margin: 0 0 28px; }
+
+section.pic { padding: 72px 96px 120px; }
+.pic h2 { font-size: 52px; margin: 0 0 24px; }
+.pic .split { gap: 40px; }
+.shotbig { width: 1250px; height: 753px; object-fit: contain; border-radius: 12px; background: #0B1220; }
+.cap { font-size: 26px; line-height: 1.4; color: #44506A; margin: 0 0 20px; }
+.pic .foot { left: 96px; width: 1728px; bottom: 48px; }
+
+.steps { display: flex; gap: 24px; }
+.step { flex: 1; font-size: 28px; font-weight: 600; line-height: 1.3; color: #0F1B2D; margin: 0; border-top: 4px solid #0F1B2D; padding-top: 20px; }
+
+.foot { position: absolute; left: 128px; bottom: 64px; width: 1664px; display: flex; justify-content: space-between; }
+.foottext { font-size: 24px; color: #5E6880; margin: 0; }
+.dark .foottext { color: #BFC9DA; }
+.pg { font-size: 24px; color: #5E6880; }
+.pg::before { content: counter(page); }
+.dark .pg { color: #BFC9DA; }
+
+</style>
+</head>
+<body>
+<div class="mri-bar">
+  <span class="brand">Modern Reject Inference<small>slides · personal open-source project by Luiz Kauffmann</small></span>
+  <nav><a href="explorer.html">Explorer</a><a href="slides.html" class="on">Slides</a><a href="index.html">About &amp; data</a><a href="https://github.com/Luizkauffmann/Modern-Reject-Inference">GitHub</a></nav>
+</div>
+<div class="deck">
+  <p class="deck-head"><span>38 slides: the problem, the mathematics step by step, and the app.</span><label><input type="checkbox" id="notesToggle"> Show speaker notes</label><a href="slides.pdf">Download as PDF</a></p>
+<div class="frame"><section id="cover" class="dark" data-transition="fade">
+<p class="eyebrow">REJECT INFERENCE WITH CREDIT BUREAU DATA</p>
+<h1>Finding the good customers we declined</h1>
+<p class="lede">How bureau performance turns reject inference from an assumption into a measurement. The concepts, the mathematics and a live demo that runs in your browser.</p>
+<div class="foot"><p class="foottext">Luiz Kauffmann · Open-source project · Synthetic data</p></div>
+</section></div>
+<p class="notes">Open with the question, not the product: every lender declines some people who would have been good customers. The question is how many, who they are, and what rule would let them in safely. Everything shown today runs on synthetic data shaped like bureau data, so the figures illustrate the method. They are not findings about any real portfolio.</p>
+<div class="frame"><section id="problem" data-transition="fade">
+<p class="eyebrow">THE PROBLEM</p>
+<h2>We only see how booked accounts perform</h2>
+<div class="cards">
+<div class="card"><p class="big">20,000</p><p class="ctext">applications come through the door</p></div>
+<div class="card"><p class="big">61%</p><p class="ctext">are approved by the current policy</p></div>
+<div class="card"><p class="big">33%</p><p class="ctext">are booked and get a repayment outcome</p></div>
+</div>
+<p class="note">A scorecard is trained on that 33%, then applied to 100% of applicants. The other 67% never receive a label, and the declined never get a chance to prove the policy wrong.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">This is the selection problem. We learn only from the people we chose to lend to. If the policy is wrong about a group, we never find out, because that group never gets an account. In the sample: 20,000 applications, 12,198 approved, 6,671 booked.</p>
+<div class="frame"><section id="questions" data-transition="fade">
+<p class="eyebrow">THE PROBLEM</p>
+<h2>Two questions follow</h2>
+<div class="cards">
+<div class="card"><h3>1. Modelling</h3><p class="ctext">How do we build a score for everyone who applies, when the bad flag exists only for booked accounts?</p><p class="tag">Classical reject inference</p></div>
+<div class="card"><h3>2. Strategy</h3><p class="ctext">Which applicants did the policy turn away who would have been good customers, and what rule lets them in without raising the bad rate?</p><p class="tag">Swap-in analysis</p></div>
+</div>
+<p class="note">Bureau data connects the two. For a not-booked applicant who opened a similar trade with another lender, we can see how that trade performed. The second question stops being a guess and becomes a measurement.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Most reject-inference work stops at question one. The interesting business question is the second: who did we wrongly decline, and what do we change. Bureau performance on trades opened elsewhere is what makes that answerable.</p>
+<div class="frame"><section id="populations" data-transition="fade">
+<p class="eyebrow">THE EVIDENCE</p>
+<h2>Three populations, three kinds of evidence</h2>
+<table>
+<tr><th style="width:30%">Population</th><th style="width:14%">Count</th><th style="width:38%">What we observe</th><th style="width:18%">Bad rate</th></tr>
+<tr><td>Booked</td><td>6,671</td><td>Internal 12-month outcome</td><td>6.7%</td></tr>
+<tr><td>Approved, not booked</td><td>5,527</td><td>Bureau outcome for 4,440</td><td>5.8%</td></tr>
+<tr><td>Declined</td><td>7,802</td><td>Bureau outcome for 3,768</td><td>24.2%</td></tr>
+</table>
+<p class="note">The bureau outcome is never used to train a model. It is held back as an independent check on everything that follows.</p>
+<p class="note">About 4,000 declined applicants have no bureau trade at all. For them, inference remains the only evidence.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Three groups. Booked: we know what happened with us. Approved but not booked: they took an offer elsewhere, and the bureau shows how it went. Declined: about half found credit elsewhere, and the bureau shows that too. Note the declined bad rate of 24 percent overall. The policy is broadly right. The question is where it is wrong.</p>
+<div class="frame"><section id="math" class="accent" data-transition="fade">
+<p class="eyebrow">BEHIND THE SCENES</p>
+<h2>The mathematics, step by step</h2>
+<div class="steps">
+<p class="step">1. Score the booked</p>
+<p class="step">2. Infer the rejects</p>
+<p class="step">3. Translate off-us to on-us</p>
+<p class="step">4. Price the decision</p>
+<p class="step">5. Map and twins</p>
+<p class="step">6. Search for rules</p>
+</div>
+</section></div>
+<p class="notes">Six steps. The first two are classical reject inference. Steps three and four turn a bureau outcome into a profit-and-loss statement for our own book. Step five explains the picture and the twins. Step six is where new rules come from. Nothing is a black box: each step is a formula or a short algorithm, and we will walk through each one.</p>
+<div class="frame"><section id="kgb" data-transition="fade">
+<p class="eyebrow">STEP 1 · SCORE</p>
+<h2>A model on the outcomes we know</h2>
+<div class="split">
+<div class="left" style="width:820px">
+<p class="lede">The known good/bad (KGB) model is a logistic regression trained on booked accounts only. Its target is the internal 12-month bad flag.</p>
+<p class="formula">z = β0 + β1·x1 + … + βk·xk<br>p_kgb = 1 / (1 + exp(−z))</p>
+<p class="ctext">x = bureau and application attributes. p_kgb = probability of going bad.</p>
+</div>
+<ul class="points" style="width:752px">
+<li>Trained without class weighting, so the output stays a calibrated probability, not only a ranking.</li>
+<li>It then scores everyone who was not booked.</li>
+<li>Its blind spot: it has never seen a declined applicant. Below the policy cuts it is extrapolating.</li>
+</ul>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Step one is the model everyone already has: fit on booked accounts. We keep it calibrated because the next step uses its output as a probability, not just a rank order. The weakness is the extrapolation: the model is asked about people unlike anyone it trained on.</p>
+<div class="frame"><section id="kgbbias" data-transition="fade">
+<p class="eyebrow">STEP 1 · SCORE</p>
+<h2>Why a booked-only model is not enough</h2>
+<div class="bar">
+<div class="zonea"><p class="ztitle">Policy approves</p><p class="ztext">Outcomes are observed here. The model is trained here.</p></div>
+<div class="zoneb"><p class="ztitle">Policy declines</p><p class="ztext">No outcome. The model extrapolates here.</p></div>
+</div>
+<p class="axis">Applicants ordered from lowest to highest risk →</p>
+<ul class="points">
+<li><b>Truncation.</b> Booked accounts below the policy cuts barely exist (only manual overrides), so the model never learns how risk behaves there.</li>
+<li><b>Selection.</b> Among the approved, who accepts the offer is not random: take-up is 55%, and riskier applicants accept more often.</li>
+<li><b>Consequence.</b> The score still ranks rejects reasonably, but the level of risk it assigns to them is unverified. Reject inference is the attempt to fix that level.</li>
+</ul>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">This is the reason reject inference exists. A model fit only where we lend is asked about people unlike anyone it trained on. Two distortions: truncation, because the declined region has almost no training data, and selection, because even within approvals the people who book are not a random draw. The ranking survives better than the level, and the level is what sets cutoffs.</p>
+<div class="frame"><section id="methods" data-transition="fade">
+<p class="eyebrow">STEP 2 · INFER</p>
+<h2>Three ways to label the rejects</h2>
+<div class="cards">
+<div class="card"><h3>Hard cutoff</h3><p class="formula f24">bad if p_kgb ≥ 0.20<br>good otherwise</p><p class="ctext">Simple and transparent. Treats a probability as a certainty.</p></div>
+<div class="card"><h3>Parceling</h3><p class="formula f24">P(bad) =<br>min(1, 1.5 × r_band)</p><p class="ctext">r_band is the booked bad rate in the applicant’s score band. The 1.5 assumes rejects are worse than booked at the same score.</p></div>
+<div class="card"><h3>Fuzzy augmentation</h3><p class="formula f24">bad row, weight p_kgb<br>good row, weight 1 − p_kgb</p><p class="ctext">No hard label. Each reject enters the training table twice, weighted.</p></div>
+</div>
+<p class="note">For each method, a final logistic regression is then trained on the whole through-the-door population.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">These are the three textbook methods. Hard cutoff draws a line. Parceling draws labels at random at the band's bad rate, inflated by a factor someone has to choose. Fuzzy augmentation avoids choosing a label at all. Each has an assumption baked in: the cutoff, the multiplier, or trust in the KGB probability. Traditionally nobody can check those assumptions. Next slide: with bureau data, we can.</p>
+<div class="frame"><section id="parcel" data-transition="fade">
+<p class="eyebrow">STEP 2 · INFER</p>
+<h2>Parceling, worked through</h2>
+<div class="split">
+<ol class="points" style="width:940px">
+<li>Cut the booked-only score into nine bands. Upper edges: 2%, 4%, 6%, 9%, 13%, 20%, 30%, 45%.</li>
+<li>In each band, measure the bad rate of booked accounts, r_band. If a band has fewer than 30 booked accounts, the applicant’s own score is used instead.</li>
+<li>For each reject, draw a random number u between 0 and 1. Label the reject bad when u &lt; min(1, 1.5 × r_band).</li>
+</ol>
+<div class="col">
+<p class="ex"><b>Example, illustrative numbers</b><br>Reject with p_kgb = 0.11 → band 5 (9% to 13%).<br>Booked bad rate in band 5: 10%.<br>P(bad) = 1.5 × 10% = 15%.<br>Draw u = 0.62. Since 0.62 ≥ 0.15, the label is good.</p>
+</div>
+</div>
+<p class="note">The labels are random: rebuild the flow and individual labels change, while the band-level bad rates stay the same. The multiplier 1.5 is an assumption someone has to choose.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Parceling in three lines. Band the score, read the booked bad rate in each band, then assign bads to rejects at that rate inflated by a factor. The factor encodes the belief that a reject is worse than a booked account with the same score. Nobody can verify 1.5 without outside data. That is the role bureau outcomes play two slides from now.</p>
+<div class="frame"><section id="fuzzy" data-transition="fade">
+<p class="eyebrow">STEP 2 · INFER</p>
+<h2>Fuzzy augmentation, worked through</h2>
+<p class="lede">No label is chosen. Each reject enters the training table twice, and the final model maximises a weighted likelihood.</p>
+<p class="formula">L(β) = Σ w_i · [ y_i · log(p_i) + (1 − y_i) · log(1 − p_i) ]</p>
+<table style="font-size:28px">
+<tr><th style="width:46%">Training row</th><th style="width:18%">Target y</th><th style="width:36%">Weight w</th></tr>
+<tr><td>Reject A (p_kgb = 0.30), as bad</td><td>1</td><td>0.30</td></tr>
+<tr><td>Reject A (p_kgb = 0.30), as good</td><td>0</td><td>0.70</td></tr>
+<tr><td>Booked B, went bad</td><td>1</td><td>1.00</td></tr>
+</table>
+<p class="note">No cutoff and no multiplier. Its one assumption: the booked-only score is right, on average, for rejects.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Fuzzy augmentation keeps the uncertainty. A reject with a 30 percent score is 30 percent of a bad and 70 percent of a good. Booked accounts keep their real outcome at full weight. The formula is the ordinary logistic log-likelihood with a weight on each row. It has one assumption, that the KGB probability is right on average for rejects, and that is a testable statement once we have bureau outcomes.</p>
+<div class="frame"><section id="grading" data-transition="fade">
+<p class="eyebrow">STEP 2 · INFER</p>
+<h2>Bureau outcomes grade each method</h2>
+<table>
+<tr><th style="width:28%">Method</th><th style="width:26%">Labelled bad, not-booked with a bureau trade</th><th style="width:26%">Predicted bad rate, declined</th><th style="width:20%">Verdict</th></tr>
+<tr class="hl"><td>What happened (bureau)</td><td>14.2%</td><td>24.2%</td><td>Reference</td></tr>
+<tr><td>Hard cutoff</td><td>23.7%</td><td>49.3%</td><td>Overstates risk</td></tr>
+<tr><td>Parceling</td><td>20.9%</td><td>36.8%</td><td>Overstates risk</td></tr>
+<tr><td>Fuzzy augmentation</td><td>14.3%</td><td>25.0%</td><td>Closest to actual</td></tr>
+</table>
+<p class="note">All four models rank applicants about equally well (AUC near 0.75 on booked, 0.81 on not-booked). They differ in the level of risk they assign to rejects, and that level is what drives cutoffs and pricing.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Because the bureau flag was held back, we can mark each method against what happened. In this sample hard cutoff and parceling both label far too many rejects as bad; fuzzy lands close. The point is not that fuzzy always wins. The point is that with bureau data you can measure which assumption fits your portfolio instead of arguing about it. And note the ranking power is about the same: the methods differ in level, which is exactly what matters when you set a cutoff.</p>
+<div class="frame"><section id="picmethods" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · METHODS TAB</p>
+<h2>The three methods, graded against bureau outcomes</h2>
+<div class="split">
+<img class="shotbig" src="img/methods.png" alt="Reject Inference Explorer, Methods tab: inferred flags compared with bureau outcomes and model accuracy">
+<div class="col">
+<p class="cap"><b>Map:</b> not-booked applicants coloured by what a method assumed, next to what happened.</p>
+<p class="cap"><b>Right panel:</b> share labelled bad by each method against the actual bureau rate.</p>
+<p class="cap"><b>Below:</b> each final model’s predicted level for declined applicants, and its ranking power.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">This is the grading table from the previous slide, live in the app. The useful demo move: switch the map colouring between an inferred flag and the observed bureau outcome, and let the audience see where the method and reality disagree.</p>
+<div class="frame"><section id="onus" data-transition="fade">
+<p class="eyebrow">STEP 3 · TRANSLATE</p>
+<h2>From “bad elsewhere” to “bad with us”</h2>
+<div class="cards">
+<div class="card"><h3>Off-us to on-us factor</h3><p class="formula f24">f = Σ n_b · BR_int(b) / Σ n_b · BR_bur(b)</p><p class="ctext">Per score band b: the internal bad rate of booked accounts against the bureau bad rate of approved-not-booked applicants, who passed the same policy. Limited to 0.5–1.5. In this sample: 0.89.</p></div>
+<div class="card"><h3>Take-up</h3><p class="formula f24">take-up = booked / approved</p><p class="ctext">Not every approval becomes a loan. In this sample: 55%. It scales the profit of any extra approvals.</p></div>
+</div>
+<p class="formula" style="margin:32px 0 0">on-us equivalent bad rate = f × bureau bad rate</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Performance at another lender is not performance with us: different product, pricing, servicing. So we calibrate. Approved-not-booked applicants are the bridge, because they passed our policy but performed elsewhere. Comparing them with our booked accounts, band by band, gives one factor. Here it is 0.89: a bureau bad rate of 5 percent reads as about 4.5 percent on our book. Take-up then says how many extra approvals would become loans.</p>
+<div class="frame"><section id="economics" data-transition="fade">
+<p class="eyebrow">STEP 4 · PRICE</p>
+<h2>Every decision gets a break-even</h2>
+<div class="split">
+<div class="left" style="width:520px">
+<p class="big">7.7%</p>
+<p class="ctext">Break-even bad rate with a margin of 350 per good account and a loss of 4,200 per bad account.</p>
+</div>
+<div style="width:1088px">
+<p class="formula">break-even = margin / (margin + loss)<br>= 350 / (350 + 4,200)</p>
+<p class="formula">profit = n × take-up ×<br>((1 − b) × margin − b × loss)</p>
+<p class="ex">n = extra approvals, b = their on-us equivalent bad rate.<br><b>Example:</b> n = 346, take-up 54.7%, b = 2.5%<br>346 × 0.547 × (0.975 × 350 − 0.025 × 4,200) ≈ 44,600</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Two numbers from the business, margin and loss, give one threshold. Any group of declined applicants with an on-us equivalent bad rate under 7.7 percent makes money. The example uses rounded inputs: 346 approvals, about 55 percent of whom book, each good one earning 350 and each bad one costing 4,200. In the app margin and loss are live inputs, and every profit figure follows them.</p>
+<div class="frame"><section id="picoverview" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · OVERVIEW TAB</p>
+<h2>Populations, factors and the cost of each decline rule</h2>
+<div class="split">
+<img class="shotbig" src="img/overview.png" alt="Reject Inference Explorer, Overview tab: similarity map with population counts, off-us factor, take-up and decline-rule table">
+<div class="col">
+<p class="cap"><b>Left:</b> margin and loss inputs, and the break-even they imply.</p>
+<p class="cap"><b>Right, top:</b> approval rate, bad rate, off-us to on-us factor and take-up.</p>
+<p class="cap"><b>Right, table:</b> for each decline rule, the on-us equivalent bad rate of the group it declines and the profit if approved as a whole. Red means it would lose money.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Steps three and four on one screen. The factor and take-up are computed from the data. Margin and loss are typed in. The table then prices each decline rule as if its whole group were approved. Most rows are red, which is the policy doing its job. The opportunity is inside the rows, not in dropping a rule.</p>
+<div class="frame"><section id="vector" data-transition="fade">
+<p class="eyebrow">STEP 5 · MAP AND TWINS</p>
+<h2>Each applicant becomes a point in 22 dimensions</h2>
+<div class="split">
+<ol class="points" style="width:900px">
+<li>Take 22 numeric attributes: 18 from the bureau, plus requested amount, income, employment months and payment-to-income.</li>
+<li>Fill a missing value with that attribute’s median.</li>
+<li>Clip each attribute at its 1st and 99th percentile, so one extreme balance cannot dominate.</li>
+<li>Standardise: z = (x − mean) / standard deviation.</li>
+</ol>
+<div class="col">
+<table style="font-size:28px">
+<tr><th style="width:58%">Attribute</th><th style="width:22%">Raw</th><th style="width:20%">z</th></tr>
+<tr><td>Bureau score</td><td>640</td><td>−0.7</td></tr>
+<tr><td>Utilisation %</td><td>28</td><td>−0.4</td></tr>
+<tr><td>Monthly income</td><td>6,200</td><td>+0.5</td></tr>
+<tr><td>Delinquencies 24m</td><td>0</td><td>−0.4</td></tr>
+</table>
+<p class="axis" style="margin:12px 0 0">Illustrative values, 4 of the 22 attributes.</p>
+</div>
+</div>
+<p class="note">After this, one unit means one standard deviation on every attribute, so a dollar of income and a point of utilisation become comparable. The same 22 z-values feed both the map and the twins.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Before any map or any twin, every applicant is turned into a list of 22 numbers on a common scale. Without standardising, income in thousands of dollars would swamp utilisation in percent, and distance would mean nothing. Clipping at the 1st and 99th percentile stops a single extreme value from stretching the scale.</p>
+<div class="frame"><section id="tsne1" data-transition="fade">
+<p class="eyebrow">STEP 5 · THE MAP</p>
+<h2>t-SNE, part 1: who is whose neighbour</h2>
+<p class="lede">In the 22-dimensional space, distances are turned into probabilities: how likely is applicant i to pick applicant j as a neighbour?</p>
+<p class="formula">p(j|i) = exp(−d_ij² / 2σ_i²) / Σ_k exp(−d_ik² / 2σ_i²)</p>
+<ul class="points">
+<li>d_ij is the straight-line distance between the two applicants’ 22 z-values.</li>
+<li>σ_i is tuned for each applicant so that everyone has the same effective number of neighbours. That number is the perplexity, set to 40 here.</li>
+<li>The two directions are averaged into one similarity p_ij. Close pairs get a high value; distant pairs get almost zero.</li>
+</ul>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">t-SNE stands for t-distributed stochastic neighbour embedding. Part one happens entirely in the original 22 dimensions. For each applicant we put a bell curve around them and ask how much weight falls on every other applicant. The width of the bell adapts: in a dense region it is narrow, in a sparse region wide, so each applicant ends up with about 40 effective neighbours. The output is a table of similarities between pairs.</p>
+<div class="frame"><section id="tsne2" data-transition="fade">
+<p class="eyebrow">STEP 5 · THE MAP</p>
+<h2>t-SNE, part 2: draw it in two dimensions</h2>
+<div class="split">
+<div class="col">
+<p class="ctext" style="margin:0 0 16px">Give each applicant a position y on the plane, and measure similarity there with a heavier-tailed curve:</p>
+<p class="formula">q_ij ∝ 1 / (1 + |y_i − y_j|²)</p>
+<p class="ctext" style="margin:0 0 16px">Then move the points until q matches p, by minimising:</p>
+<p class="formula">KL(P‖Q) = Σ p_ij · log(p_ij / q_ij)</p>
+</div>
+<ul class="points" style="width:760px">
+<li>Solved by gradient descent, started from the first two principal components, with a fixed seed so the map is reproducible.</li>
+<li>A pair that is close in 22 dimensions but far apart on the plane is penalised heavily. The reverse is penalised lightly. So neighbours stay neighbours.</li>
+<li>The heavy tail lets unlike groups sit far apart, which stops everything crowding into the middle.</li>
+</ul>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Part two. Scatter the applicants on a flat sheet and compute the same kind of pairwise similarity there. Then nudge the points, thousands of times, to make the flat similarities agree with the 22-dimensional ones. The cost function is the Kullback-Leibler divergence between the two sets of similarities. Its asymmetry is the key property: it cares most about keeping true neighbours together. Run on a stratified sample of 6,300 applicants, it takes about a minute.</p>
+<div class="frame"><section id="tsneread" data-transition="fade">
+<p class="eyebrow">STEP 5 · THE MAP</p>
+<h2>Reading the map, and its limits</h2>
+<div class="cards">
+<div class="card"><h3>What it tells you</h3>
+<ul class="cardlist">
+<li>Points close together are applicants with similar profiles across all 22 attributes.</li>
+<li>A declined applicant sitting inside the cloud of booked customers resembles our customers.</li>
+<li>Shape shows the population; colour shows the outcome, an inferred label, a score or the decline rule.</li>
+</ul></div>
+<div class="card"><h3>What it does not</h3>
+<ul class="cardlist">
+<li>The two axes have no meaning. Distances between far-apart groups, and the size of a cluster, are not reliable.</li>
+<li>It is a sample: 2,200 booked, 1,500 approved-not-booked, 2,600 declined.</li>
+<li>No rule, twin or statistic is computed from map coordinates. All of them use the original attributes.</li>
+</ul></div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Be precise about what the picture is. It is faithful locally: neighbours on the map are neighbours in the data. It is not faithful globally: do not read meaning into the axes, into how far two islands are from each other, or into how big an island looks. And it is only a display. Every number and every rule in the app is computed on the real attributes of all 20,000 applicants.</p>
+<div class="frame"><section id="picmap" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · THE MAP</p>
+<h2>Declined applicants, coloured by the rule that declined them</h2>
+<div class="split">
+<img class="shotbig" src="img/maprule.png" alt="Reject Inference Explorer: similarity map with declined applicants coloured by decline rule">
+<div class="col">
+<p class="cap"><b>Circles:</b> booked. <b>Diamonds:</b> approved, not booked. <b>Triangles:</b> declined.</p>
+<p class="cap">Each colour is one policy rule.</p>
+<p class="cap">Where a decline colour sits inside the cloud of booked customers, that rule is removing people who look like our customers. Those regions are the candidates for review.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">This is the t-SNE layout of 6,300 applicants. With this colouring you can see which rule owns which territory. Look for a decline colour mixed into the booked cloud. That is where the next two tools, twins and rule search, are pointed.</p>
+<div class="frame"><section id="twins" data-transition="fade">
+<p class="eyebrow">STEP 5 · TWINS</p>
+<h2>What a counterfactual twin is</h2>
+<div class="split">
+<div style="width:940px">
+<p class="lede">We can never observe what an applicant would have done under the other decision. A twin is the closest real answer: someone with nearly the same profile who did receive the other decision.</p>
+<ul class="points">
+<li><b>For a booked customer:</b> the twins are not-booked applicants with a bureau outcome. People like this one, whom we did not book: did they perform?</li>
+<li><b>For a not-booked applicant:</b> the twins are booked customers. People like this one, whom we did book: how did they perform with us?</li>
+</ul>
+</div>
+<div class="diagram" style="width:668px;height:520px">
+<svg aria-label="One selected applicant linked to its ten nearest applicants in the other population" width="668" height="520" viewBox="0 0 668 520">
+<rect x="1" y="1" width="666" height="518" rx="14" fill="#FDFDFB" stroke="#D9DCE3" stroke-width="2"/>
+<g fill="#C3C9D6">
+<circle cx="70" cy="80" r="8"/><circle cx="130" cy="150" r="8"/><circle cx="90" cy="260" r="8"/><circle cx="60" cy="380" r="8"/><circle cx="150" cy="440" r="8"/><circle cx="230" cy="70" r="8"/><circle cx="250" cy="430" r="8"/><circle cx="400" cy="60" r="8"/><circle cx="520" cy="90" r="8"/><circle cx="600" cy="170" r="8"/><circle cx="610" cy="300" r="8"/><circle cx="560" cy="420" r="8"/><circle cx="450" cy="430" r="8"/><circle cx="160" cy="330" r="8"/><circle cx="520" cy="230" r="8"/><circle cx="190" cy="210" r="8"/><circle cx="480" cy="360" r="8"/>
+</g>
+<g stroke="#1F5FD0" stroke-width="2">
+<line x1="334" y1="250" x2="290" y2="180"/><line x1="334" y1="250" x2="360" y2="170"/><line x1="334" y1="250" x2="420" y2="200"/><line x1="334" y1="250" x2="430" y2="270"/><line x1="334" y1="250" x2="410" y2="330"/><line x1="334" y1="250" x2="340" y2="350"/><line x1="334" y1="250" x2="270" y2="330"/><line x1="334" y1="250" x2="240" y2="270"/><line x1="334" y1="250" x2="255" y2="215"/><line x1="334" y1="250" x2="385" y2="245"/>
+</g>
+<g fill="#1F5FD0">
+<circle cx="290" cy="180" r="11"/><circle cx="360" cy="170" r="11"/><circle cx="420" cy="200" r="11"/><circle cx="430" cy="270" r="11"/><circle cx="410" cy="330" r="11"/><circle cx="340" cy="350" r="11"/><circle cx="270" cy="330" r="11"/><circle cx="240" cy="270" r="11"/><circle cx="255" cy="215" r="11"/><circle cx="385" cy="245" r="11"/>
+</g>
+<rect x="318" y="234" width="32" height="32" fill="#F2B544" stroke="#0F1B2D" stroke-width="3"/>
+</svg>
+<p class="dlabel" style="left:24px;top:470px;width:620px">Square: the selected applicant. Blue: its 10 nearest in the other population. Grey: everyone else.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Counterfactual means: what would have happened under the decision we did not take. We cannot rerun history for one person. But we can find real people who look almost identical and who got the other treatment. If I click a customer we booked, the twins are people we did not book who look like them, and the bureau tells us how those people performed elsewhere. If I click someone we declined, the twins are our own customers who look like them.</p>
+<div class="frame"><section id="twinsmath" data-transition="fade">
+<p class="eyebrow">STEP 5 · TWINS</p>
+<h2>How twins are computed</h2>
+<p class="formula">d(a, b) = √ Σ_j (z_a,j − z_b,j)²    over the 22 attributes j</p>
+<ol class="points">
+<li><b>Pool.</b> The opposite population: booked ↔ not-booked with a bureau outcome.</li>
+<li><b>Neighbours.</b> The 10 applicants in the pool with the smallest distance d. The search covers all 20,000 applicants, not only the map sample.</li>
+<li><b>Outcomes.</b> How many of the twins turned out good, and how many bad.</li>
+<li><b>Causes.</b> Which decline rule removed each twin.</li>
+<li><b>Differences.</b> For each attribute: mean z of the twins minus z of the selected applicant. The eight largest are shown, in standard deviations.</li>
+</ol>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">The computation is a nearest-neighbour search on the same 22 standardised numbers used for the map. It does not use map coordinates. The panel then answers three questions. Did the twins perform? Why were they kept out? And where do they differ from the person I clicked? That last one matters: if the only real difference is a score ten points under the cut, the boundary is the issue, not the applicant.</p>
+<div class="frame"><section id="pictwins" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · TWINS TAB</p>
+<h2>One booked customer and the ten look-alikes we did not book</h2>
+<div class="split">
+<img class="shotbig" src="img/twins.png" alt="Reject Inference Explorer, Twins tab: a booked customer and the ten closest not-booked applicants with their outcomes">
+<div class="col">
+<p class="cap"><b>On the map:</b> the selected customer and the twins, ringed in yellow.</p>
+<p class="cap"><b>Right panel:</b> 8 of the 10 twins performed well at another lender, and all 10 were declined by the bureau score rule.</p>
+<p class="cap"><b>Below:</b> the attributes where the customer and the twins differ most, in standard deviations.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Click a customer, get the ten nearest not-booked applicants. Read it as a sentence: all ten of the people most like this customer were turned away by the score cut, and eight of the ten repaid someone else. Twins are evidence about individuals. They show the boundary is misplaced somewhere. The rule search finds where.</p>
+<div class="frame"><section id="rulecard" data-transition="fade">
+<p class="eyebrow">STEP 6 · SEARCH</p>
+<h2>How any candidate rule is scored</h2>
+<ol class="points">
+<li><b>Members:</b> declined applicants, not bankrupt, who meet every condition of the rule.</li>
+<li><b>Bureau bad rate:</b> bads ÷ members who have a bureau outcome.</li>
+<li><b>On-us equivalent b:</b> off-us factor × bureau bad rate.</li>
+<li><b>Profit:</b> members × take-up × ((1 − b) × margin − b × loss).</li>
+<li><b>New portfolio:</b> currently approved plus members. Its bad rate uses every known outcome: internal for booked, bureau × factor for the rest.</li>
+<li><b>Holdout:</b> the same figures on a random 30% of applicants that the search never saw.</li>
+</ol>
+<p class="note">A rule clears break-even when b ≤ margin ÷ (margin + loss). Every search on the next slides produces candidates and passes them through this one scorer.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Before the search methods, the scorer they all share. A rule is a set of conditions. Its members are the declined applicants it would approve; bankruptcies are excluded by design. We measure the bureau bad rate on members who have one, convert it to our book, and price it. We also recompute the whole portfolio with the members added. And we repeat all of it on a 30 percent holdout so a lucky rule shows up as a gap between the two numbers.</p>
+<div class="frame"><section id="sweep" data-transition="fade">
+<p class="eyebrow">STEP 6 · SEARCH 1</p>
+<h2>Threshold sweep: move one cut</h2>
+<ol class="points">
+<li>Take one policy rule, for example bureau score &lt; 660. Keep only applicants declined by this rule alone: they pass every other rule.</li>
+<li>Relax the cut in steps: 650, 640, 630, down to 580.</li>
+<li>At each step, score two groups: the marginal slice (newly admitted by this step) and the cumulative group (everyone admitted so far).</li>
+<li>Recommend the furthest step for which every marginal slice so far is at or below break-even, each measured on at least 30 bureau outcomes.</li>
+</ol>
+<p class="ex" style="margin:28px 0 0"><b>In the sample:</b> moving 660 → 650 admits 831 applicants at an 11.5% on-us equivalent bad rate. Break-even is 7.7%, so no step is recommended. One cut cannot isolate the good declined applicants.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">The simplest idea first: just lower the score cut. Two details make it honest. We only count applicants declined by that one rule, because relaxing the score cut does not help someone who also fails debt-to-income. And we look at the marginal slice, not the cumulative average, so a good first step cannot hide a bad second one. In this sample the sweep says no: the very first step is already above break-even. The same sweep runs for debt-to-income, delinquencies and inquiries.</p>
+<div class="frame"><section id="picsweep" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · RULES TAB</p>
+<h2>Threshold sweep: no single cut can be relaxed profitably</h2>
+<div class="split">
+<img class="shotbig" src="img/sweep.png" alt="Reject Inference Explorer, Rules tab: threshold sweep table with marginal and cumulative bad rates per step">
+<div class="col">
+<p class="cap"><b>Each block:</b> one policy rule, relaxed step by step.</p>
+<p class="cap"><b>Each row:</b> who comes in at that step, the bad rate of that marginal slice, the cumulative bad rate and the estimated profit.</p>
+<p class="cap">Red rows are above break-even. Here no rule has a first step that qualifies: three are above break-even and the fourth has too few outcomes to trust.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">This is the sweep in the app. No block offers a usable first step. That is an honest and useful answer: the simple fix does not exist in this portfolio. It sets up the next tool.</p>
+<div class="frame"><section id="prim1" data-transition="fade">
+<p class="eyebrow">STEP 6 · SEARCH 2</p>
+<h2>Bump hunting: peeling a box</h2>
+<div class="split">
+<ol class="points" style="width:960px">
+<li>Start with a box holding every eligible declined applicant who has a bureau outcome (the 70% used for searching).</li>
+<li>For each of the 22 attributes, try cutting off the lowest 8% or the highest 8% of what is still inside. That is 44 candidate peels.</li>
+<li>Keep the single peel that leaves the highest share of good performers inside the box.</li>
+<li>Repeat. Stop when the box would fall below 3% of the starting population (and never under 40 applicants).</li>
+</ol>
+<div class="diagram" style="width:648px;height:520px">
+<svg aria-label="A box shrinking in steps around a region where good performers are concentrated" width="648" height="520" viewBox="0 0 648 520">
+<rect x="2" y="2" width="644" height="456" rx="10" fill="#FDFDFB" stroke="#44506A" stroke-width="3"/>
+<rect x="150" y="70" width="440" height="330" rx="8" fill="none" stroke="#44506A" stroke-width="3" stroke-dasharray="10 8"/>
+<rect x="300" y="140" width="240" height="200" rx="8" fill="#E4ECFB" stroke="#1F5FD0" stroke-width="4"/>
+<g fill="#D9622B">
+<rect x="40" y="50" width="16" height="16"/><rect x="80" y="170" width="16" height="16"/><rect x="50" y="300" width="16" height="16"/><rect x="100" y="400" width="16" height="16"/><rect x="230" y="30" width="16" height="16"/><rect x="420" y="26" width="16" height="16"/><rect x="600" y="110" width="16" height="16"/><rect x="606" y="330" width="16" height="16"/><rect x="330" y="418" width="16" height="16"/><rect x="190" y="110" width="16" height="16"/><rect x="200" y="330" width="16" height="16"/><rect x="250" y="230" width="16" height="16"/><rect x="556" y="366" width="16" height="16"/><rect x="430" y="96" width="16" height="16"/><rect x="470" y="290" width="16" height="16"/>
+</g>
+<g fill="#1F5FD0">
+<circle cx="120" cy="100" r="9"/><circle cx="110" cy="250" r="9"/><circle cx="210" cy="190" r="9"/><circle cx="260" cy="370" r="9"/><circle cx="560" cy="100" r="9"/><circle cx="330" cy="170" r="9"/><circle cx="380" cy="200" r="9"/><circle cx="430" cy="170" r="9"/><circle cx="500" cy="190" r="9"/><circle cx="350" cy="250" r="9"/><circle cx="410" cy="260" r="9"/><circle cx="510" cy="250" r="9"/><circle cx="340" cy="310" r="9"/><circle cx="400" cy="310" r="9"/><circle cx="510" cy="310" r="9"/><circle cx="450" cy="220" r="9"/>
+</g>
+</svg>
+<p class="dlabel" style="left:8px;top:470px;width:630px">Blue dots: good at another lender. Orange squares: bad. Each peel tightens the box around the good.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Bump hunting is the PRIM algorithm: patient rule induction method. Picture the declined applicants as points in a 22-dimensional room. We start with walls around all of them and move one wall in by a small amount, eight percent of what is inside, choosing whichever wall and whichever side most raises the share of good performers. Then again, and again. Patient, because each step is small, so the method can change direction instead of committing to one big split the way a decision tree does. The diagram shows it in two dimensions.</p>
+<div class="frame"><section id="prim2" data-transition="fade">
+<p class="eyebrow">STEP 6 · SEARCH 2</p>
+<h2>Bump hunting: from a box to a readable rule</h2>
+<ol class="points">
+<li><b>Simplify.</b> After each peel, release any wall the box does not need: if dropping a condition costs less than 1.2 points of good rate, it is dropped, widest release first.</li>
+<li><b>Tidy.</b> Round thresholds to values a policy writer would type: balances to hundreds, scores to whole numbers.</li>
+<li><b>Score.</b> Run the rule through the common scorer on all eligible declined applicants, including the 30% holdout.</li>
+<li><b>Choose.</b> Every peel yields one candidate, from large and risky to small and clean. The app preselects the most profitable; the analyst can pick any other.</li>
+</ol>
+<p class="ex" style="margin:28px 0 0"><b>Selected in the sample:</b> 10 conditions, 346 extra approvals, 2.5% on-us equivalent bad rate. On the holdout: 7.6%, barely under break-even.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">A raw box could carry 20 conditions, most of them doing nothing. So after every peel the app tries removing each condition and keeps only the ones that earn their place. Thresholds are rounded so the rule reads like policy, not like a regression output. The result is not one answer but a ladder of candidates trading volume against purity. The app highlights the most profitable, and the holdout column tells you whether to believe it.</p>
+<div class="frame"><section id="picbump" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · RULES TAB</p>
+<h2>Bump hunting: the selected rule and its members</h2>
+<div class="split">
+<img class="shotbig" src="img/bump.png" alt="Reject Inference Explorer, Rules tab: bump-hunting rule card with conditions, approvals, bad rates, profit and holdout, members ringed on the map">
+<div class="col">
+<p class="cap"><b>Rule card:</b> the conditions in plain if/then form, extra approvals, bureau and on-us bad rates, approval and portfolio bad rate before and after, estimated profit.</p>
+<p class="cap"><b>Holdout line:</b> the same measurement on the 30% not used by the search.</p>
+<p class="cap"><b>Table below:</b> the ladder of candidate boxes, from large to small.</p>
+<p class="cap"><b>Map:</b> members ringed in yellow.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">The rule card is the scorer from three slides ago, laid out for a credit officer. Read the rule aloud, then the two bad rates, then the holdout. Point at the table: each row is one peel, and clicking a row above trades a higher bad rate for more volume. The button at the bottom sends the rule to the strategy tree.</p>
+<div class="frame"><section id="lasso" data-transition="fade">
+<p class="eyebrow">STEP 6 · SEARCH 3</p>
+<h2>Lasso to rule: from a drawing to an if/else</h2>
+<ol class="points">
+<li>The analyst circles a region of the map (at least 15 points).</li>
+<li>Each map point is labelled 1 if circled, 0 if not. A decision tree learns to tell them apart using the 22 original attributes: depth 3, balanced classes, leaves of at least 8% of the selection.</li>
+<li>The leaf that best matches the circle is chosen: the highest F1, the balance of precision and coverage.</li>
+<li>The path from the root to that leaf is read as an if/else rule, then scored like any other.</li>
+</ol>
+<p class="note"><b>Precision:</b> share of the rule’s members that were circled. <b>Coverage:</b> share of the circled points the rule captures. The map inspires the rule; the rule itself lives on real attributes.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">The third tool starts from human judgement. An analyst sees a pocket on the map and circles it. A circle is not a policy, so the app asks a small decision tree: what, in terms of real attributes, distinguishes the circled applicants from the rest? Depth three keeps the answer to at most three conditions. The app reports how well the rule reproduces the circle, and then prices it. A region chosen by eye is often not profitable, and the app says so.</p>
+<div class="frame"><section id="piclasso" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · RULES TAB</p>
+<h2>Lasso to rule: a drawn region, described and priced</h2>
+<div class="split">
+<img class="shotbig" src="img/lasso.png" alt="Reject Inference Explorer: a lasso selection on the map and the if/else rule derived from it">
+<div class="col">
+<p class="cap"><b>On the map:</b> the region the analyst drew.</p>
+<p class="cap"><b>Rule card:</b> the if/else the tree returned, how much of the selection it covers, and the same economics as any other rule.</p>
+<p class="cap">This selection gives 23.2% on-us equivalent, far above break-even, and the app labels it as not clearing. A region chosen by eye is not automatically a good rule.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">A deliberately unflattering example. The analyst circled something that looked interesting, the app turned it into a rule, and the rule is bad: 23.2 percent against a 7.7 percent break-even. That is the tool working. It gives intuition a fast, priced answer instead of a debate.</p>
+<div class="frame"><section id="result" data-transition="fade">
+<p class="eyebrow">STEP 6 · RESULT</p>
+<h2>What the search found in the sample</h2>
+<div class="grid2">
+<div class="card"><p class="stat">346</p><p class="ctext">extra approvals from one ten-condition rule</p></div>
+<div class="card"><p class="stat">2.5%</p><p class="ctext">on-us equivalent bad rate, against a 7.7% break-even (7.6% on the holdout)</p></div>
+<div class="card"><p class="stat">61.0% → 62.7%</p><p class="ctext">approval rate</p></div>
+<div class="card"><p class="stat">6.06% → 6.00%</p><p class="ctext">portfolio bad rate</p></div>
+</div>
+<p class="note">All of these applicants are currently declined by the bureau score rule. No single threshold found them; a combination did. The holdout is far weaker than the headline, so this is a lead to validate, not a result.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">About 350 extra approvals at a bad rate well under break-even, and the portfolio bad rate edges down. Be straight about the holdout: 7.6 percent on-us equivalent against 2.5 in the search, on only 58 outcomes. The rule is partly fitted to the data. It is a lead worth validating on a later period. Remind the room this is synthetic data: it shows what the method can surface, not what any real portfolio holds.</p>
+<div class="frame"><section id="frontier" data-transition="fade">
+<p class="eyebrow">CHECK</p>
+<h2>The frontier: how it is drawn</h2>
+<ol class="points">
+<li>Sort all applicants by one model’s score, safest first.</li>
+<li>Approve the top 30%, then 32.5%, and so on up to 95%.</li>
+<li>At each level, compute the bad rate on the known outcomes among those approved (bureau outcomes scaled by the off-us factor). That traces one curve per model.</li>
+<li>Add two single points: the policy today, and the policy plus the selected rule.</li>
+</ol>
+<p class="note">Lower and further right is better: more approvals at a lower bad rate. In the sample the model curves sit below the policy point, so ranking by score alone would also beat the current rule set. That is a second finding, separate from the swap-in rule.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">The frontier answers: at any approval rate, what is the best bad rate a score could deliver? Each model gets a curve by approving its safest applicants first. The current policy and the challenger are single points on the same chart. The next slide shows it in the app.</p>
+<div class="frame"><section id="picfrontier" class="pic" data-transition="fade">
+<p class="eyebrow">IN THE APP · FRONTIER TAB</p>
+<h2>The frontier: policy today, policy plus the rule, and the models</h2>
+<div class="split">
+<img class="shotbig" src="img/frontier.png" alt="Reject Inference Explorer, Frontier tab: approval rate against bad rate with model curves, the champion policy and the challenger">
+<div class="col">
+<p class="cap"><b>Curves:</b> each model used alone to rank everyone.</p>
+<p class="cap"><b>White square:</b> the policy today. <b>Yellow dot:</b> the policy plus the selected rule.</p>
+<p class="cap"><b>Small dots:</b> the other bump-hunting candidates. <b>Dashed line:</b> break-even.</p>
+<p class="cap">The yellow dot is to the right of and below the square: more approvals, lower bad rate.</p>
+</div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">One picture for the credit committee. Where we are, where the rule takes us, and how far either is from what a score alone could deliver. The gap between the square and the curves is a second finding: the rule set itself leaves value on the table.</p>
+<div class="frame"><section id="strategy" data-transition="fade">
+<p class="eyebrow">DEPLOY</p>
+<h2>From a rule to a governed strategy</h2>
+<div class="cards">
+<div class="card"><h3>1. Export</h3><p class="ctext">“Send to Strategy Tree” writes the rule as a decision tree in JSON: the current policy rules plus one swap-in branch. Bankruptcy stays first.</p></div>
+<div class="card"><h3>2. Review</h3><p class="ctext">A tree is something a risk analyst can read leaf by leaf, edit and version, in any strategy tree tool.</p></div>
+<div class="card"><h3>3. Test</h3><p class="ctext">Backtest the challenger against the champion on the same population, then on a later period, then in a controlled test.</p></div>
+</div>
+<p class="note">A finding is not a strategy until someone can review it, edit it and test it. The export is the hand-off point.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">A finding is not a strategy until someone can review it, edit it and test it. The rule leaves the Explorer as a decision tree: the existing policy with one extra approve branch. From there it follows the normal path of any strategy change: review, backtest, controlled test.</p>
+<div class="frame"><section id="demo" class="dark" data-transition="fade">
+<p class="eyebrow">LIVE DEMO</p>
+<h2>The demo in five moves</h2>
+<ol class="points">
+<li><b>Overview.</b> The three populations, and what each decline rule is costing.</li>
+<li><b>Map.</b> Declined applicants who sit among our own customers.</li>
+<li><b>Twins.</b> Click one customer and meet the look-alikes we turned away.</li>
+<li><b>Rules.</b> Bump hunting proposes a swap-in rule, with its holdout.</li>
+<li><b>Strategy.</b> Export the rule as a strategy tree, ready to review and backtest.</li>
+</ol>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Demo script, about eight minutes. One: Overview tab, read the populations and point at a decline rule shown in red. Two: on the map, switch colouring to the decline rule and find blue triangles inside the green cloud. Three: click a booked customer near that region, read the twins panel aloud. Four: Rules tab, run the threshold sweep first to show nothing clears, then bump hunting; read the rule card and the holdout line. Five: type a name and press Send to Strategy Tree to export the challenger.</p>
+<div class="frame"><section id="limits" data-transition="fade">
+<p class="eyebrow">CAVEATS</p>
+<h2>What to keep in mind</h2>
+<div class="grid3">
+<div class="card small"><h3>Selection in bureau data</h3><p class="stext">A bureau outcome exists only if another lender approved the applicant. Those applicants are likely better than rejects who found no credit.</p></div>
+<div class="card small"><h3>Where the factor comes from</h3><p class="stext">The off-us factor is estimated on approved applicants and applied to declined ones. That it holds lower in the score range is an assumption.</p></div>
+<div class="card small"><h3>Product and terms</h3><p class="stext">A “similar trade” elsewhere may differ in amount, price and term.</p></div>
+<div class="card small"><h3>Overfitting</h3><p class="stext">The holdout guards against it, but validate on a later period, then run a controlled champion/challenger test.</p></div>
+<div class="card small"><h3>Fair lending</h3><p class="stext">Any new rule needs the usual compliance review of the attributes it uses before production.</p></div>
+<div class="card small"><h3>Synthetic data</h3><p class="stext">Every figure in this deck illustrates the method. None is a finding about a real portfolio.</p></div>
+</div>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Say these before they are asked. The biggest one is selection: we see outcomes only for rejects who were approved somewhere else, and they are probably the better rejects. The factor does not correct for that. That is why the last step is always a controlled test, not a rollout. And any rule that changes who is approved goes through fair-lending review.</p>
+<div class="frame"><section id="next" class="dark" data-transition="fade">
+<p class="eyebrow">NEXT STEP</p>
+<h2>One table is enough to start</h2>
+<p class="lede">The Explorer runs on a single table of applications. Scores from existing models are optional.</p>
+<ul class="points">
+<li>One row per application: decision, decline rule, booked or not, and the attributes used by the policy.</li>
+<li>Two outcomes: internal performance for booked accounts, bureau performance for the rest.</li>
+<li>Optional: your own scores, to compare against the inferred ones.</li>
+<li>Runs on a laptop from CSV files, or entirely in the browser.</li>
+</ul>
+<p class="note">Try the live demo, then run it on a sample of your own portfolio.</p>
+<div class="foot"><p class="foottext">Synthetic data. Figures illustrate the method.</p><div class="pg"></div></div>
+</section></div>
+<p class="notes">Close on how little it takes to try this on real data. One table: applications, decisions, attributes, and two outcome flags. Scores are optional. It runs locally from CSV files, and the demo runs in the browser.</p>
+</div>
+<script>
+(function () {
+  function fit() { document.querySelectorAll('.frame').forEach(function (f) { f.firstElementChild.style.transform = 'scale(' + (f.clientWidth / 1920) + ')'; }); }
+  window.addEventListener('resize', fit); fit();
+  document.getElementById('notesToggle').addEventListener('change', function (e) { document.body.classList.toggle('with-notes', e.target.checked); });
+})();
+</script>
+</body>
+</html>
